@@ -1,18 +1,20 @@
+import 'dart:async';
+
 import 'package:http/http.dart' as http;
 
 /// Represents the source of markdown content
 abstract class MarkdownSource {
   /// Get the markdown content as a string
-  Future<String> getContent();
+  FutureOr<String> getContent();
 }
 
 /// Markdown source from HTTP URL
 class HttpMarkdownSource extends MarkdownSource {
+  HttpMarkdownSource({required this.url, this.headers, this.timeout});
+
   final String url;
   final Map<String, String>? headers;
   final Duration? timeout;
-
-  HttpMarkdownSource({required this.url, this.headers, this.timeout});
 
   @override
   Future<String> getContent() async {
@@ -34,24 +36,22 @@ class HttpMarkdownSource extends MarkdownSource {
 
 /// Markdown source from direct string content
 class StringMarkdownSource extends MarkdownSource {
-  final String content;
-
   StringMarkdownSource(this.content);
 
+  final String content;
+
   @override
-  Future<String> getContent() async {
-    return content;
-  }
+  String getContent() => content;
 }
 
 /// Markdown source from HTTP response
 class HttpResponseMarkdownSource extends MarkdownSource {
-  final http.Response response;
-
   HttpResponseMarkdownSource(this.response);
 
+  final http.Response response;
+
   @override
-  Future<String> getContent() async {
+  String getContent() {
     if (response.statusCode == 200) {
       return response.body;
     } else {
