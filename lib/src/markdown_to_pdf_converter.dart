@@ -22,8 +22,8 @@ class MarkdownToPdfConverter {
       : _options = options ?? const PdfOptions(),
   _styles = PdfStyles() {
     _builder = MarkdownToPdfBuilder(
-      styles: _styles,
-      options: _options,
+        styles: _styles,
+    options: _options
     );
   }
 
@@ -82,9 +82,13 @@ class MarkdownToPdfConverter {
   }
 
   Future<Uint8List> _buildDocumentBytes(String markdownContent) async {
+    final builder = _builder;
+    final options = _options;
+    final styles = _styles;
+
     return Isolate.run(() async {
-      _styles.initializeFonts();
-      final document = await _builder.buildDocument(markdownContent);
+    styles.initializeFonts();
+      final document = await builder.buildDocument(markdownContent);
 
       return document.save();
     });
