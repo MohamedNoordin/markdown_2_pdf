@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
@@ -38,14 +37,13 @@ class MarkdownToPdfConverter {
     final markdownContent = await source.getContent();
     await ensureInitialized();
 
-    final document = await _buildDocument(markdownContent);
+    final documentBytes = await _buildDocumentBytes(markdownContent);
 
     final directory = await getApplicationDocumentsDirectory();
     final file =
         File('${directory.path}/${fileName ?? 'markdown_document.pdf'}');
 
-    final pdfBytes = await document.save();
-    await file.writeAsBytes(pdfBytes);
+    await file.writeAsBytes(documentBytes);
 
     return file;
   }
@@ -55,9 +53,7 @@ class MarkdownToPdfConverter {
     final markdownContent = await source.getContent();
     await ensureInitialized();
 
-    final document = await _buildDocument(markdownContent);
-
-    return document.save();
+    return _buildDocumentBytes(markdownContent);
   }
 
   /// Convert markdown from HTTP response to PDF and share/print
@@ -65,11 +61,10 @@ class MarkdownToPdfConverter {
     final markdownContent = await source.getContent();
     await ensureInitialized();
 
-    final document = await _buildDocument(markdownContent);
+    final documentBytes = await _buildDocumentBytes(markdownContent);
 
-    final pdfBytes = await document.save();
     await Printing.sharePdf(
-      bytes: pdfBytes,
+      bytes: documentBytes,
       filename: _options.title ?? 'markdown_document.pdf',
     );
   }
@@ -79,21 +74,20 @@ class MarkdownToPdfConverter {
     final markdownContent = await source.getContent();
     await ensureInitialized();
 
-    final document = await _buildDocument(markdownContent);
+    final documentBytes = await _buildDocumentBytes(markdownContent);
 
-    final pdfBytes = await document.save();
     await Printing.layoutPdf(
-      onLayout: (format) async => pdfBytes,
+      onLayout: (format) async => documentBytes,
     );
   }
 
-  Future<pw.Document> _buildDocument(String markdownContent) async {
-    final document = await Isolate.run(() async {
+  Future<Uint8List> _buildDocumentBytes(String markdownContent) async {
+    return Isolate.run(() async {
       _styles.initializeFonts();
-      return _builder.buildDocument(markdownContent);
-    });
+      final document = await _builder.buildDocument(markdownContent);
 
-    return document;
+      return document.save();
+    });
   }
 
   /// Initialize fonts for PDF generation
